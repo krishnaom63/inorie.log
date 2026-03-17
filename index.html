@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Inorie.log｜軍師に聞く</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+:root{
+  --gold:#c8a84b;--gold2:#e8c86a;
+  --bg:#f5f0e8;--bg2:#ede8de;--bg3:#fff;
+  --text:#2a2520;--muted:#888;--border:rgba(200,168,75,0.3);
+  --green:#4a7c59;--red:#c0392b;--blue:#2c5f8a;--purple:#6b3fa0;
+  --tab-h:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;padding-bottom:var(--tab-h)}
+
+/* タブバー */
+.tabbar{
+position:fixed;bottom:0;left:0;right:0;
+height:var(–tab-h);
+background:rgba(245,240,232,0.96);
+backdrop-filter:blur(12px);
+border-top:1px solid var(–border);
+display:flex;z-index:100;
+}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .2s;padding:8px 0}
+.tab-icon{font-size:22px;transition:transform .2s}
+.tab-label{font-size:10px;color:var(–muted);letter-spacing:1px;transition:color .2s}
+.tab.active .tab-label{color:var(–gold);font-weight:700}
+.tab.active .tab-icon{transform:scale(1.15)}
+
+/* 画面 */
+.screen{min-height:calc(100vh - var(–tab-h));display:flex;flex-direction:column;align-items:center;padding:0 20px 30px}
+.hidden{display:none!important}
+
+/* ヘッダー */
+.header{width:100%;text-align:center;padding:48px 0 32px}
+.header-en{font-size:11px;letter-spacing:7px;color:var(–gold);font-family:‘Noto Serif JP’,serif}
+.header-line{width:32px;height:1px;background:linear-gradient(90deg,transparent,var(–gold),transparent);margin:8px auto}
+.header-ja{font-size:28px;font-weight:700;font-family:‘Noto Serif JP’,serif;color:var(–text);letter-spacing:4px}
+.header-sub{font-size:12px;color:var(–muted);margin-top:6px;letter-spacing:1px}
+
+/* 録音ボタン */
+.rec-btn-wrap{display:flex;flex-direction:column;align-items:center;margin:32px 0 24px}
+.rec-btn{
+width:100px;height:100px;border-radius:50%;border:none;cursor:pointer;
+background:linear-gradient(135deg,#b8942a,var(–gold));
+box-shadow:0 6px 24px rgba(200,168,75,.4),0 0 0 12px rgba(200,168,75,.1);
+display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.rec-btn:active{transform:scale(.94)}
+.rec-btn.recording{
+background:linear-gradient(135deg,#c0392b,#e74c3c);
+box-shadow:0 6px 24px rgba(192,57,43,.4),0 0 0 12px rgba(192,57,43,.1);
+animation:recPulse 1.5s ease-in-out infinite;
+}
+@keyframes recPulse{
+0%,100%{box-shadow:0 6px 24px rgba(192,57,43,.4),0 0 0 12px rgba(192,57,43,.1)}
+50%{box-shadow:0 6px 24px rgba(192,57,43,.5),0 0 0 20px rgba(192,57,43,.05)}
+}
+.rec-btn-icon{font-size:36px}
+.rec-btn-label{margin-top:12px;font-size:12px;color:var(–muted);letter-spacing:2px}
+
+/* タイマー */
+.timer{font-size:52px;font-weight:300;color:var(–text);letter-spacing:4px;font-family:‘Noto Serif JP’,serif;margin:8px 0}
+
+/* 波形 */
+.waveform{width:100%;max-width:340px;height:64px;display:flex;align-items:center;gap:3px;margin:8px 0 16px}
+.wbar{flex:1;border-radius:10px;background:linear-gradient(180deg,var(–gold2),var(–gold));height:4px;transition:height .1s;opacity:.6}
+.wbar.active{animation:waveAnim .5s ease-in-out infinite alternate;opacity:1}
+.wbar:nth-child(odd).active{animation-duration:.45s}
+.wbar:nth-child(even).active{animation-duration:.55s}
+@keyframes waveAnim{from{height:4px}to{height:48px}}
+
+/* 文字起こし */
+.transcript-box{width:100%;background:var(–bg3);border:1px solid var(–border);border-radius:14px;padding:16px;min-height:90px;font-size:14px;color:#666;line-height:1.9;margin-bottom:16px}
+
+/* ボタン */
+.btn{width:100%;padding:17px;border-radius:14px;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:‘Noto Sans JP’,sans-serif;letter-spacing:1px;transition:all .2s}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:linear-gradient(135deg,#b8942a,var(–gold));color:#fff;box-shadow:0 4px 16px rgba(200,168,75,.35)}
+.btn-ghost{background:var(–bg2);color:var(–muted);font-size:13px}
+.btn-copy{background:var(–bg2);color:var(–gold);border:1px solid var(–border)}
+
+/* エラー */
+.error{color:var(–red);font-size:12px;text-align:center;width:100%;padding:10px 14px;background:rgba(192,57,43,.06);border-radius:8px;border:1px solid rgba(192,57,43,.2);margin-bottom:12px}
+
+/* マイクガイド */
+.mic-guide{width:100%;background:rgba(200,168,75,.07);border:1px solid var(–border);border-radius:14px;padding:20px;margin-bottom:16px;text-align:center}
+.mic-guide p{font-size:13px;color:#666;line-height:1.9}
+.mic-guide strong{color:var(–gold)}
+
+/* カード */
+.cards{width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.card{background:var(–bg3);border-radius:14px;padding:16px 18px;border:1px solid rgba(200,168,75,.15);border-left:3px solid var(–gold);animation:cardIn .35s ease both}
+.card:nth-child(1){animation-delay:.05s}
+.card:nth-child(2){animation-delay:.12s}
+.card:nth-child(3){animation-delay:.19s}
+.card:nth-child(4){animation-delay:.26s}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card.omote{border-left-color:var(–green)}
+.card.ura{border-left-color:var(–red)}
+.card.next{border-left-color:var(–blue)}
+.card.shintak{border-left-color:var(–purple)}
+.card-label{font-size:10px;letter-spacing:3px;color:var(–gold);margin-bottom:8px;display:flex;align-items:center;gap:5px;font-family:‘Noto Serif JP’,serif}
+.card.omote .card-label{color:var(–green)}
+.card.ura .card-label{color:var(–red)}
+.card.next .card-label{color:var(–blue)}
+.card.shintak .card-label{color:var(–purple)}
+.card-body{font-size:14px;color:var(–text);line-height:1.9;white-space:pre-wrap}
+
+/* ローディング */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh}
+.loading-icon{font-size:56px;animation:float 2s ease-in-out infinite;margin-bottom:20px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.thinking{font-size:16px;color:var(–gold);margin-bottom:16px;font-family:‘Noto Serif JP’,serif;letter-spacing:1px;min-height:28px;text-align:center}
+.dots{display:flex;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(–gold);animation:dotA .6s ease-in-out infinite alternate}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes dotA{from{opacity:.2;transform:scale(.7)}to{opacity:1;transform:scale(1.2)}}
+
+/* 神託 */
+.shintak-header{background:linear-gradient(135deg,rgba(107,63,160,.08),rgba(107,63,160,.03));border:1px solid rgba(107,63,160,.2);border-radius:16px;padding:20px;width:100%;text-align:center;margin-bottom:24px}
+</style>
+
+</head>
+<body>
+
+<!-- 録音タブ -->
+
+<div id="tab-rec" class="screen">
+  <div class="header">
+    <p class="header-en">INORIE . LOG</p>
+    <div class="header-line"></div>
+    <h1 class="header-ja">録音</h1>
+    <p class="header-sub">声を記録し、AIが戦略を授ける</p>
+  </div>
+  <p id="recError" class="error hidden"></p>
+  <div class="timer" id="timer">00:00</div>
+  <div class="waveform">
+    <div class="wbar" id="w1"></div><div class="wbar" id="w2"></div>
+    <div class="wbar" id="w3"></div><div class="wbar" id="w4"></div>
+    <div class="wbar" id="w5"></div><div class="wbar" id="w6"></div>
+    <div class="wbar" id="w7"></div><div class="wbar" id="w8"></div>
+    <div class="wbar" id="w9"></div><div class="wbar" id="w10"></div>
+    <div class="wbar" id="w11"></div><div class="wbar" id="w12"></div>
+    <div class="wbar" id="w13"></div><div class="wbar" id="w14"></div>
+    <div class="wbar" id="w15"></div><div class="wbar" id="w16"></div>
+  </div>
+  <div class="rec-btn-wrap">
+    <button class="rec-btn" id="recBtn" onclick="toggleRec()">
+      <span class="rec-btn-icon" id="recBtnIcon">🎙️</span>
+    </button>
+    <p class="rec-btn-label" id="recBtnLabel">タップして録音開始</p>
+  </div>
+  <div class="transcript-box" id="recTranscript" style="display:none">話し始めてください…</div>
+  <div class="mic-guide hidden" id="micGuide">
+    <p>🎙️<br><br>
+    <strong>マイクの許可が必要です</strong><br><br>
+    「許可」または「Allow」をタップしてください。<br><br>
+    設定 → Safari → マイク → 許可</p>
+    <button class="btn btn-gold" style="margin-top:16px" onclick="toggleRec()">もう一度試す</button>
+  </div>
+</div>
+
+<!-- 軍師タブ -->
+
+<div id="tab-gunshi" class="screen hidden">
+  <div id="gunshiWaiting" class="loading-wrap">
+    <div style="font-size:56px;margin-bottom:16px">🏯</div>
+    <p style="color:var(--muted);font-size:14px;text-align:center;line-height:1.8">
+      録音タブで録音を開始してください<br>
+      <span style="font-size:12px">解析結果がここに表示されます</span>
+    </p>
+  </div>
+  <div id="gunshiAnalyzing" class="loading-wrap hidden">
+    <div class="loading-icon">🏯</div>
+    <p class="thinking" id="thinkingText">軍師が思考中…</p>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+  <div id="gunshiResult" class="hidden" style="width:100%;padding-top:32px">
+    <div class="header" style="padding-top:32px;padding-bottom:16px">
+      <p class="header-en">GUNSHI ANALYSIS</p>
+      <div class="header-line"></div>
+      <h2 class="header-ja" style="font-size:22px">軍師解析結果</h2>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="card-label">📋 要約</div><div class="card-body" id="resSummary"></div></div>
+      <div class="card next"><div class="card-label">✅ ネクストアクション</div><div class="card-body" id="resNext"></div></div>
+      <div class="card omote"><div class="card-label">⚔️ 表の策</div><div class="card-body" id="resOmote"></div></div>
+      <div class="card ura"><div class="card-label">🗡️ 裏の策</div><div class="card-body" id="resUra"></div></div>
+    </div>
+    <button class="btn btn-gold" id="copyBtn" onclick="copyAll()">📋 全部コピーする</button>
+    <button class="btn btn-ghost" onclick="backToRec()">🔄 もう一度録音する</button>
+  </div>
+</div>
+
+<!-- 神託タブ -->
+
+<div id="tab-shintak" class="screen hidden">
+  <div class="header">
+    <p class="header-en" style="color:var(--purple)">SHINTAK MODE</p>
+    <div class="header-line" style="background:linear-gradient(90deg,transparent,var(--purple),transparent)"></div>
+    <h1 class="header-ja">神託</h1>
+    <p class="header-sub">祈りと悩みを声に出してください</p>
+  </div>
+  <div id="shintakIdle">
+    <div class="shintak-header">
+      <div style="font-size:40px;margin-bottom:8px">⛩️</div>
+      <p style="font-size:13px;color:#666;line-height:1.9">
+        神様があなたの声を聴いています<br>
+        <span style="color:var(--purple);font-size:11px">悩み・祈り・心の声をそのままに</span>
+      </p>
+    </div>
+    <div style="width:100%;background:rgba(107,63,160,.06);border:1px solid rgba(107,63,160,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center">
+      <p style="font-size:12px;color:#666;line-height:1.9">
+        🗣️ <strong style="color:var(--purple)">ゆっくり・はっきり</strong>話してください<br>
+        <span style="font-size:11px;color:#999">静かな場所で、マイクに近づいてお話しください</span>
+      </p>
+    </div>
+    <p id="shintakError" class="error hidden"></p>
+    <div class="timer" id="shintakTimer" style="color:var(--purple)">00:00</div>
+    <div class="waveform">
+      <div class="wbar" id="sw1" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw2" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw3" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw4" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw5" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw6" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw7" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+      <div class="wbar" id="sw8" style="background:linear-gradient(180deg,#c39bd3,#6b3fa0)"></div>
+    </div>
+    <div class="rec-btn-wrap">
+      <button class="rec-btn" id="shintakBtn" onclick="toggleShintakRec()"
+        style="background:linear-gradient(135deg,#5a2d8a,#6b3fa0);box-shadow:0 6px 24px rgba(107,63,160,.4),0 0 0 12px rgba(107,63,160,.1)">
+        <span class="rec-btn-icon" id="shintakBtnIcon">⛩️</span>
+      </button>
+      <p class="rec-btn-label" id="shintakBtnLabel">タップして祈りを記録</p>
+    </div>
+    <div class="transcript-box" id="shintakTranscript" style="display:none">話し始めてください…</div>
+  </div>
+  <div id="shintakAnalyzing" class="loading-wrap hidden">
+    <div class="loading-icon">⛩️</div>
+    <p class="thinking" id="shintakThinkingText" style="color:var(--purple)">神様に繋いでいます…</p>
+    <div class="dots">
+      <div class="dot" style="background:var(--purple)"></div>
+      <div class="dot" style="background:var(--purple)"></div>
+      <div class="dot" style="background:var(--purple)"></div>
+    </div>
+  </div>
+  <div id="shintakResult" class="hidden" style="width:100%;padding-top:32px">
+    <div class="header" style="padding-top:32px;padding-bottom:16px">
+      <p class="header-en" style="color:var(--purple)">ORACLE MESSAGE</p>
+      <div class="header-line" style="background:linear-gradient(90deg,transparent,var(--purple),transparent)"></div>
+      <h2 class="header-ja" style="font-size:22px">神 託</h2>
+    </div>
+    <div class="cards">
+      <div class="card shintak">
+        <div class="card-label">⛩️ 神様からのメッセージ</div>
+        <div class="card-body" id="shintakMsg" style="font-family:'Noto Serif JP',serif;font-size:15px;line-height:2.1"></div>
+      </div>
+    </div>
+    <button class="btn btn-copy" id="shintakCopyBtn" onclick="copyShintaku()">📋 コピーする</button>
+    <button class="btn btn-ghost" onclick="backToShintak()">🔄 もう一度祈る</button>
+  </div>
+</div>
+
+<!-- タブバー -->
+
+<div class="tabbar">
+  <div class="tab active" id="tabBtn-rec" onclick="switchTab('rec')">
+    <span class="tab-icon">🎙️</span>
+    <span class="tab-label">録音</span>
+  </div>
+  <div class="tab" id="tabBtn-gunshi" onclick="switchTab('gunshi')">
+    <span class="tab-icon">🏯</span>
+    <span class="tab-label">軍師</span>
+  </div>
+  <div class="tab" id="tabBtn-shintak" onclick="switchTab('shintak')">
+    <span class="tab-icon">⛩️</span>
+    <span class="tab-label">神託</span>
+  </div>
+</div>
+
+<script>
+let recog = null, isRecording = false, transcript = "";
+let timerInterval = null, seconds = 0;
+let thinkTimer = null;
+let shintakRecog = null, isShintakRec = false, shintakTranscript = "";
+let shintakSeconds = 0, shintakTimerInterval = null;
+
+const gunshiPhrases = ["軍師が思考中…","戦局を見極めている…","策を練っている…","智謀を巡らせている…","勝機を探っている…"];
+const shintakPhrases = ["神様に繋いでいます…","祈りを受け取っています…","神託を紡いでいます…","天の声を聴いています…"];
+
+function switchTab(tab){
+  ["rec","gunshi","shintak"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.add("hidden");
+    document.getElementById("tabBtn-"+t).classList.remove("active");
+  });
+  document.getElementById("tab-"+tab).classList.remove("hidden");
+  document.getElementById("tabBtn-"+tab).classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function pad(n){return n<10?"0"+n:n}
+function updateTimer(id,s){document.getElementById(id).textContent=pad(Math.floor(s/60))+":"+pad(s%60)}
+function setWave(prefix,active,count){
+  for(let i=1;i<=count;i++){
+    const b=document.getElementById(prefix+i);
+    if(b){active?b.classList.add("active"):b.classList.remove("active")}
+  }
+}
+
+function toggleRec(){
+  if(isRecording){stopRec()}else{startRec()}
+}
+
+function startRec(){
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showErr("recError","お使いのブラウザは音声認識に対応していません。Chrome または Safari をお使いください。");return}
+  transcript="";
+  recog=new SR();
+  recog.lang="ja-JP";recog.continuous=true;recog.interimResults=true;
+  recog.onstart=()=>{
+    isRecording=true;seconds=0;
+    timerInterval=setInterval(()=>{seconds++;updateTimer("timer",seconds)},1000);
+    document.getElementById("recBtn").classList.add("recording");
+    document.getElementById("recBtnIcon").textContent="⏹";
+    document.getElementById("recBtnLabel").textContent="タップして停止";
+    document.getElementById("recTranscript").style.display="block";
+    document.getElementById("micGuide").classList.add("hidden");
+    setWave("w",true,16);
+  };
+  recog.onresult=e=>{
+    let t="";for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;
+    transcript=t;
+    document.getElementById("recTranscript").textContent=t||"話し始めてください…";
+  };
+  recog.onerror=e=>{
+    if(e.error==="aborted")return;
+    resetRec();
+    if(e.error==="not-allowed"||e.error==="permission-denied"){
+      document.getElementById("micGuide").classList.remove("hidden");
+    }else{showErr("recError","マイクエラー: "+e.error)}
+  };
+  recog.onend=()=>{if(isRecording)stopRec()};
+  try{recog.start()}catch(e){document.getElementById("micGuide").classList.remove("hidden")}
+}
+
+function stopRec(){
+  if(recog){try{recog.stop()}catch(e){}}
+  const t=transcript;
+  resetRec();
+  if(!t.trim()){showErr("recError","音声が認識されませんでした。");return}
+  runAnalyze(t,"gunshi");
+}
+
+function resetRec(){
+  isRecording=false;
+  clearInterval(timerInterval);
+  document.getElementById("timer").textContent="00:00";
+  document.getElementById("recBtn").classList.remove("recording");
+  document.getElementById("recBtnIcon").textContent="🎙️";
+  document.getElementById("recBtnLabel").textContent="タップして録音開始";
+  document.getElementById("recTranscript").style.display="none";
+  setWave("w",false,16);
+}
+
+function toggleShintakRec(){
+  if(isShintakRec){stopShintakRec()}else{startShintakRec()}
+}
+
+function startShintakRec(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showErr("shintakError","お使いのブラウザは音声認識に対応していません。Chrome または Safari をお使いください。");return}
+  shintakTranscript="";
+  shintakRecog=new SR();
+  shintakRecog.lang="ja-JP";shintakRecog.continuous=true;shintakRecog.interimResults=true;
+  shintakRecog.onstart=()=>{
+    isShintakRec=true;shintakSeconds=0;
+    shintakTimerInterval=setInterval(()=>{shintakSeconds++;updateTimer("shintakTimer",shintakSeconds)},1000);
+    document.getElementById("shintakBtn").style.background="linear-gradient(135deg,#4a1f7a,#5a2d8a)";
+    document.getElementById("shintakBtnIcon").textContent="⏹";
+    document.getElementById("shintakBtnLabel").textContent="タップして停止";
+    document.getElementById("shintakTranscript").style.display="block";
+    setWave("sw",true,8);
+  };
+  shintakRecog.onresult=e=>{
+    let t="";for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;
+    shintakTranscript=t;
+    document.getElementById("shintakTranscript").textContent=t||"話し始めてください…";
+  };
+  shintakRecog.onerror=e=>{
+    if(e.error==="aborted")return;
+    resetShintakRec();showErr("shintakError","マイクエラー: "+e.error)
+  };
+  shintakRecog.onend=()=>{if(isShintakRec)stopShintakRec()};
+  try{shintakRecog.start()}catch(e){showErr("shintakError","マイクの許可が必要です。")}
+}
+
+function stopShintakRec(){
+  if(shintakRecog){try{shintakRecog.stop()}catch(e){}}
+  const t=shintakTranscript;
+  resetShintakRec();
+  if(!t.trim()){showErr("shintakError","音声が認識されませんでした。");return}
+  runAnalyze(t,"shintak");
+}
+
+function resetShintakRec(){
+  isShintakRec=false;
+  clearInterval(shintakTimerInterval);
+  document.getElementById("shintakTimer").textContent="00:00";
+  document.getElementById("shintakBtn").style.background="linear-gradient(135deg,#5a2d8a,#6b3fa0)";
+  document.getElementById("shintakBtnIcon").textContent="⛩️";
+  document.getElementById("shintakBtnLabel").textContent="タップして祈りを記録";
+  document.getElementById("shintakTranscript").style.display="none";
+  setWave("sw",false,8);
+}
+
+function runAnalyze(text,mode){
+  const isShintak=mode==="shintak";
+  clearInterval(thinkTimer);
+
+  if(isShintak){
+    document.getElementById("shintakIdle").classList.add("hidden");
+    document.getElementById("shintakAnalyzing").classList.remove("hidden");
+    document.getElementById("shintakResult").classList.add("hidden");
+    switchTab("shintak");
+    let i=0;
+    thinkTimer=setInterval(()=>{i=(i+1)%shintakPhrases.length;document.getElementById("shintakThinkingText").textContent=shintakPhrases[i]},1400);
+  }else{
+    document.getElementById("gunshiWaiting").classList.add("hidden");
+    document.getElementById("gunshiAnalyzing").classList.remove("hidden");
+    document.getElementById("gunshiResult").classList.add("hidden");
+    switchTab("gunshi");
+    let i=0;
+    thinkTimer=setInterval(()=>{i=(i+1)%gunshiPhrases.length;document.getElementById("thinkingText").textContent=gunshiPhrases[i]},1400);
+  }
+
+  const system=isShintak
+    ?`あなたは日本古来の神社に宿る神様の声です。語りかける相手の魂に寄り添い、温かく、詩的で、神秘的な言葉で気づきのメッセージを伝えてください。200文字以内。「あなた」への語りかけ形式。和の言葉・自然の比喩を使う。`
+    :`あなたは戦国時代の天才軍師です。重厚で端的な武将口調で以下のJSON形式のみで返答してください：{"summary":"状況の要点3行以内","omote":"表の策。具体的アクション2〜3つ（各行「・」始め）","ura":"裏の策。別視点アクション2〜3つ（各行「・」始め）","next":"今日できる最重要アクション1つ。明確・具体的・即実行可能"}`;
+
+  fetch("/API/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      system:system,
+      message:isShintak?`私の悩みと祈り：\n${text}`:`以下を分析し策を授けよ：\n${text}`
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    clearInterval(thinkTimer);
+    const content=d.text||"";
+    if(isShintak){
+      document.getElementById("shintakMsg").textContent=content;
+      document.getElementById("shintakAnalyzing").classList.add("hidden");
+      document.getElementById("shintakResult").classList.remove("hidden");
+    }else{
+      try{
+        const j=JSON.parse(content.replace(/```json|```/g,"").trim());
+        document.getElementById("resSummary").textContent=j.summary||"";
+        document.getElementById("resOmote").textContent=j.omote||"";
+        document.getElementById("resUra").textContent=j.ura||"";
+        document.getElementById("resNext").textContent=j.next||"";
+      }catch{
+        document.getElementById("resSummary").textContent=content;
+      }
+      document.getElementById("gunshiAnalyzing").classList.add("hidden");
+      document.getElementById("gunshiResult").classList.remove("hidden");
+    }
+  })
+  .catch(()=>{
+    clearInterval(thinkTimer);
+    if(isShintak){
+      document.getElementById("shintakAnalyzing").classList.add("hidden");
+      document.getElementById("shintakIdle").classList.remove("hidden");
+      showErr("shintakError","エラーが発生しました。もう一度お試しください。");
+    }else{
+      document.getElementById("gunshiAnalyzing").classList.add("hidden");
+      document.getElementById("gunshiWaiting").classList.remove("hidden");
+      showErr("recError","エラーが発生しました。もう一度お試しください。");
+      switchTab("rec");
+    }
+  });
+}
+
+function copyAll(){
+  const t=`【軍師解析結果】\n\n📋 要約\n${document.getElementById("resSummary").textContent}\n\n✅ ネクストアクション\n${document.getElementById("resNext").textContent}\n\n⚔️ 表の策\n${document.getElementById("resOmote").textContent}\n\n🗡️ 裏の策\n${document.getElementById("resUra").textContent}\n\n─ Inorie.log`;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b=document.getElementById("copyBtn");
+    b.textContent="✅ コピーしました！";
+    setTimeout(()=>b.textContent="📋 全部コピーする",2500);
+  }).catch(()=>alert("コピーに失敗しました"));
+}
+
+function copyShintaku(){
+  navigator.clipboard.writeText(document.getElementById("shintakMsg").textContent).then(()=>{
+    const b=document.getElementById("shintakCopyBtn");
+    b.textContent="✅ コピーしました";
+    setTimeout(()=>b.textContent="📋 コピーする",2500);
+  });
+}
+
+function backToRec(){transcript="";switchTab("rec")}
+function backToShintak(){
+  shintakTranscript="";
+  document.getElementById("shintakResult").classList.add("hidden");
+  document.getElementById("shintakIdle").classList.remove("hidden");
+}
+
+function showErr(id,msg){
+  const el=document.getElementById(id);
+  if(el){el.textContent=msg;el.classList.remove("hidden");setTimeout(()=>el.classList.add("hidden"),5000)}
+}
+</script>
+
+</body>
+</html>
